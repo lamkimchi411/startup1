@@ -1,5 +1,5 @@
-import { getDb } from './_lib/db.js';
-import { cors } from './_lib/cors.js';
+import { getDb } from '../_lib/db.js';
+import { cors } from '../_lib/cors.js';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
