@@ -73,6 +73,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Fetch stats error:', err);
-    res.status(500).json({ message: 'Lỗi tải báo cáo thống kê' });
+    res.status(500).json({ message: 'Lỗi tải báo cáo thống kê: ' + err.message });
   }
 }

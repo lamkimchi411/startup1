@@ -13,7 +13,6 @@ export default async function handler(req, res) {
     return res.status(403).json({ message: 'Quyền truy cập bị từ chối' });
   }
 
-  const sql = getDb();
   const url = req.url || '';
   const match = url.match(/\/users\/(\d+)/);
   const id = (req.query && req.query.id) || (match ? match[1] : null);
@@ -21,6 +20,7 @@ export default async function handler(req, res) {
   // PUT /api/users/:id
   if (req.method === 'PUT' && id) {
     try {
+      const sql = getDb();
       const { username, password, full_name, email, phone, role } = req.body || {};
 
       const existing = await sql`SELECT id FROM users WHERE username = ${username} AND id != ${id}`;
@@ -47,13 +47,14 @@ export default async function handler(req, res) {
       return res.json({ message: 'Cập nhật thông tin người dùng thành công' });
     } catch (err) {
       console.error('Update user error:', err);
-      return res.status(500).json({ message: 'Không thể cập nhật người dùng' });
+      return res.status(500).json({ message: 'Không thể cập nhật người dùng: ' + err.message });
     }
   }
 
   // DELETE /api/users/:id
   if (req.method === 'DELETE' && id) {
     try {
+      const sql = getDb();
       if (parseInt(id, 10) === user.id) {
         return res.status(400).json({ message: 'Bạn không thể tự xóa tài khoản đang đăng nhập' });
       }
@@ -62,13 +63,14 @@ export default async function handler(req, res) {
       return res.json({ message: 'Đã xóa người dùng thành công' });
     } catch (err) {
       console.error('Delete user error:', err);
-      return res.status(500).json({ message: 'Không thể xóa người dùng' });
+      return res.status(500).json({ message: 'Không thể xóa người dùng: ' + err.message });
     }
   }
 
   // GET /api/users
   if (req.method === 'GET') {
     try {
+      const sql = getDb();
       const users = await sql`
         SELECT id, username, full_name, email, phone, role, created_at
         FROM users ORDER BY id DESC
@@ -76,13 +78,14 @@ export default async function handler(req, res) {
       return res.json({ users });
     } catch (err) {
       console.error('Fetch users error:', err);
-      return res.status(500).json({ message: 'Lỗi khi tải danh sách người dùng' });
+      return res.status(500).json({ message: 'Lỗi khi tải danh sách người dùng: ' + err.message });
     }
   }
 
   // POST /api/users
   if (req.method === 'POST') {
     try {
+      const sql = getDb();
       const { username, password, full_name, email, phone, role } = req.body || {};
       if (!username || !password || !full_name) {
         return res.status(400).json({ message: 'Vui lòng điền tên tài khoản, mật khẩu và họ tên' });
@@ -103,7 +106,7 @@ export default async function handler(req, res) {
       return res.status(201).json({ message: 'Tạo người dùng thành công', userId: result[0].id });
     } catch (err) {
       console.error('Create user error:', err);
-      return res.status(500).json({ message: 'Không thể tạo người dùng' });
+      return res.status(500).json({ message: 'Không thể tạo người dùng: ' + err.message });
     }
   }
 

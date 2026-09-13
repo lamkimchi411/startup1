@@ -15,17 +15,17 @@ async function parseJsonIfNeeded(req) {
   if (contentType.includes('multipart/form-data')) return;
 
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    if (req.readableEnded || req.complete) {
+      req.body = req.body || {};
+      return;
+    }
     try {
       const buffers = [];
       for await (const chunk of req) {
         buffers.push(chunk);
       }
       const data = Buffer.concat(buffers).toString('utf-8');
-      if (data) {
-        req.body = JSON.parse(data);
-      } else {
-        req.body = {};
-      }
+      req.body = data ? JSON.parse(data) : {};
     } catch (e) {
       req.body = {};
     }
@@ -33,39 +33,47 @@ async function parseJsonIfNeeded(req) {
 }
 
 export default async function handler(req, res) {
-  if (cors(req, res)) return;
+  try {
+    if (cors(req, res)) return;
 
-  const url = req.url || '';
+    const url = req.url || req.headers['x-matched-path'] || req.headers['x-original-url'] || '';
 
-  await parseJsonIfNeeded(req);
+    await parseJsonIfNeeded(req);
 
-  if (url.includes('/api/health')) {
-    return healthHandler(req, res);
-  }
-  if (url.includes('/api/init')) {
-    return initHandler(req, res);
-  }
-  if (url.includes('/api/auth')) {
-    return authHandler(req, res);
-  }
-  if (url.includes('/api/bookings')) {
-    return bookingsHandler(req, res);
-  }
-  if (url.includes('/api/services/upload') || url.includes('/api/upload')) {
-    return uploadHandler(req, res);
-  }
-  if (url.includes('/api/services')) {
-    return servicesHandler(req, res);
-  }
-  if (url.includes('/api/settings')) {
-    return settingsHandler(req, res);
-  }
-  if (url.includes('/api/stats')) {
-    return statsHandler(req, res);
-  }
-  if (url.includes('/api/users')) {
-    return usersHandler(req, res);
-  }
+    if (url.includes('/health')) {
+      return await healthHandler(req, res);
+    }
+    if (url.includes('/init')) {
+      return await initHandler(req, res);
+    }
+    if (url.includes('/auth')) {
+      return await authHandler(req, res);
+    }
+    if (url.includes('/bookings')) {
+      return await bookingsHandler(req, res);
+    }
+    if (url.includes('/services/upload') || url.includes('/upload')) {
+      return await uploadHandler(req, res);
+    }
+    if (url.includes('/services')) {
+      return await servicesHandler(req, res);
+    }
+    if (url.includes('/settings')) {
+      return await settingsHandler(req, res);
+    }
+    if (url.includes('/stats')) {
+      return await statsHandler(req, res);
+    }
+    if (url.includes('/users')) {
+      return await usersHandler(req, res);
+    }
 
-  return res.status(404).json({ message: `API Route Not Found: ${url}` });
+    return res.status(404).json({ message: `API Route Not Found: ${url}` });
+  } catch (error) {
+    console.error('[API Router Exception]', error);
+    return res.status(500).json({
+      message: 'Lỗi hệ thống máy chủ Serverless',
+      error: error.message || String(error)
+    });
+  }
 }

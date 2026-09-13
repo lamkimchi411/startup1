@@ -10,13 +10,13 @@ function generateBookingCode() {
 export default async function handler(req, res) {
   if (cors(req, res)) return;
 
-  const sql = getDb();
   const url = req.url || '';
 
   // GET /api/bookings/available-slots
   if (url.includes('/available-slots')) {
     if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
     try {
+      const sql = getDb();
       const { date, duration } = req.query || {};
       if (!date) return res.status(400).json({ message: 'Vui lòng cung cấp ngày cần đặt (YYYY-MM-DD)' });
 
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       return res.json({ date, openTime, closeTime, slots });
     } catch (err) {
       console.error('Available slots error:', err);
-      return res.status(500).json({ message: 'Lỗi khi kiểm tra khung giờ trống' });
+      return res.status(500).json({ message: 'Lỗi khi kiểm tra khung giờ trống: ' + err.message });
     }
   }
 
@@ -72,6 +72,7 @@ export default async function handler(req, res) {
   if (url.includes('/lookup')) {
     if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
     try {
+      const sql = getDb();
       const { phone } = req.query || {};
       if (!phone) return res.status(400).json({ message: 'Vui lòng nhập số điện thoại để tra cứu' });
 
@@ -93,7 +94,7 @@ export default async function handler(req, res) {
       return res.json({ bookings, cancelDeadlineHours });
     } catch (err) {
       console.error('Lookup error:', err);
-      return res.status(500).json({ message: 'Lỗi khi tra cứu lịch hẹn' });
+      return res.status(500).json({ message: 'Lỗi khi tra cứu lịch hẹn: ' + err.message });
     }
   }
 
@@ -101,6 +102,7 @@ export default async function handler(req, res) {
   if (url.includes('/cancel')) {
     if (req.method !== 'PATCH') return res.status(405).json({ message: 'Method not allowed' });
     try {
+      const sql = getDb();
       const match = url.match(/\/bookings\/(\d+)\/cancel/);
       const id = (req.query && req.query.id) || (match ? match[1] : null);
       const { reason, phone } = req.body || {};
@@ -143,7 +145,7 @@ export default async function handler(req, res) {
       return res.json({ message: 'Hủy lịch hẹn thành công' });
     } catch (err) {
       console.error('Cancel booking error:', err);
-      return res.status(500).json({ message: 'Không thể hủy lịch hẹn' });
+      return res.status(500).json({ message: 'Không thể hủy lịch hẹn: ' + err.message });
     }
   }
 
@@ -154,6 +156,7 @@ export default async function handler(req, res) {
     if (!user) return;
 
     try {
+      const sql = getDb();
       const match = url.match(/\/bookings\/(\d+)\/status/);
       const id = (req.query && req.query.id) || (match ? match[1] : null);
       const { status } = req.body || {};
@@ -167,13 +170,14 @@ export default async function handler(req, res) {
       return res.json({ message: `Đã cập nhật trạng thái thành '${status}'` });
     } catch (err) {
       console.error('Update status error:', err);
-      return res.status(500).json({ message: 'Không thể cập nhật trạng thái' });
+      return res.status(500).json({ message: 'Không thể cập nhật trạng thái: ' + err.message });
     }
   }
 
   // POST /api/bookings - Create new booking
   if (req.method === 'POST') {
     try {
+      const sql = getDb();
       const { customer_name, customer_phone, customer_email, booking_date, booking_time, notes, service_ids } = req.body || {};
       if (!customer_name || !customer_phone || !booking_date || !booking_time || !service_ids || service_ids.length === 0) {
         return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin: Tên, SĐT, Ngày, Giờ và ít nhất 1 dịch vụ' });
@@ -214,7 +218,7 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.error('Create booking error:', err);
-      return res.status(500).json({ message: 'Không thể xử lý yêu cầu đặt lịch' });
+      return res.status(500).json({ message: 'Không thể xử lý yêu cầu đặt lịch: ' + err.message });
     }
   }
 
@@ -224,6 +228,7 @@ export default async function handler(req, res) {
     if (!user) return;
 
     try {
+      const sql = getDb();
       const { date, status, search } = req.query || {};
       let query = `
         SELECT b.*,
@@ -256,7 +261,7 @@ export default async function handler(req, res) {
       return res.json({ bookings });
     } catch (err) {
       console.error('Fetch bookings error:', err);
-      return res.status(500).json({ message: 'Lỗi khi tải lịch hẹn' });
+      return res.status(500).json({ message: 'Lỗi khi tải lịch hẹn: ' + err.message });
     }
   }
 

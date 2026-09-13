@@ -5,7 +5,6 @@ import { requireAuth } from '../_lib/auth.js';
 export default async function handler(req, res) {
   if (cors(req, res)) return;
 
-  const sql = getDb();
   const url = req.url || '';
 
   // PATCH /api/services/:id/toggle
@@ -15,6 +14,7 @@ export default async function handler(req, res) {
     if (!user) return;
 
     try {
+      const sql = getDb();
       const match = url.match(/\/services\/(\d+)\/toggle/);
       const id = (req.query && req.query.id) || (match ? match[1] : null);
       if (!id) return res.status(400).json({ message: 'Thiếu ID dịch vụ' });
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       return res.json({ message: 'Đã thay đổi trạng thái dịch vụ' });
     } catch (err) {
       console.error('Toggle service error:', err);
-      return res.status(500).json({ message: 'Lỗi cập nhật trạng thái' });
+      return res.status(500).json({ message: 'Lỗi cập nhật trạng thái: ' + err.message });
     }
   }
 
@@ -33,6 +33,7 @@ export default async function handler(req, res) {
     if (!user) return;
 
     try {
+      const sql = getDb();
       const match = url.match(/\/services\/(\d+)/);
       const id = (req.query && req.query.id) || (match ? match[1] : null);
       const { name, category_id, description, price, duration_minutes, image_url, is_active } = req.body || {};
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
       return res.json({ message: 'Cập nhật dịch vụ thành công' });
     } catch (err) {
       console.error('Update service error:', err);
-      return res.status(500).json({ message: 'Không thể cập nhật dịch vụ' });
+      return res.status(500).json({ message: 'Không thể cập nhật dịch vụ: ' + err.message });
     }
   }
 
@@ -60,6 +61,7 @@ export default async function handler(req, res) {
     if (!user) return;
 
     try {
+      const sql = getDb();
       const match = url.match(/\/services\/(\d+)/);
       const id = (req.query && req.query.id) || (match ? match[1] : null);
       if (!id) return res.status(400).json({ message: 'Thiếu ID dịch vụ' });
@@ -68,13 +70,14 @@ export default async function handler(req, res) {
       return res.json({ message: 'Đã xóa dịch vụ' });
     } catch (err) {
       console.error('Delete service error:', err);
-      return res.status(500).json({ message: 'Không thể xóa dịch vụ' });
+      return res.status(500).json({ message: 'Không thể xóa dịch vụ: ' + err.message });
     }
   }
 
   // GET /api/services - List services
   if (req.method === 'GET') {
     try {
+      const sql = getDb();
       const includeInactive = req.query && req.query.all === 'true';
       let services, categories;
 
@@ -99,7 +102,7 @@ export default async function handler(req, res) {
       return res.json({ services, categories });
     } catch (err) {
       console.error('Fetch services error:', err);
-      return res.status(500).json({ message: 'Lỗi khi tải danh sách dịch vụ' });
+      return res.status(500).json({ message: 'Lỗi khi tải danh sách dịch vụ: ' + err.message });
     }
   }
 
@@ -109,6 +112,7 @@ export default async function handler(req, res) {
     if (!user) return;
 
     try {
+      const sql = getDb();
       const { name, category_id, description, price, duration_minutes, image_url, is_active } = req.body || {};
       if (!name || !price || !duration_minutes) {
         return res.status(400).json({ message: 'Vui lòng điền tên dịch vụ, giá và thời gian' });
@@ -124,7 +128,7 @@ export default async function handler(req, res) {
       return res.status(201).json({ message: 'Thêm dịch vụ thành công', serviceId: result[0].id });
     } catch (err) {
       console.error('Create service error:', err);
-      return res.status(500).json({ message: 'Không thể thêm dịch vụ' });
+      return res.status(500).json({ message: 'Không thể thêm dịch vụ: ' + err.message });
     }
   }
 

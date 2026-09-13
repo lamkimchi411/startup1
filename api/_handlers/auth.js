@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       return res.json({ user: rows[0] });
     } catch (err) {
       console.error('Auth me error:', err);
-      return res.status(500).json({ message: 'Lỗi server' });
+      return res.status(500).json({ message: 'Lỗi server: ' + err.message });
     }
   }
 
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.error('Register error:', err);
-      return res.status(500).json({ message: 'Lỗi hệ thống máy chủ' });
+      return res.status(500).json({ message: 'Lỗi hệ thống máy chủ: ' + err.message });
     }
   }
 
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.error('Login error:', err);
-      return res.status(500).json({ message: 'Lỗi hệ thống máy chủ' });
+      return res.status(500).json({ message: 'Lỗi hệ thống máy chủ: ' + err.message });
     }
   }
 
