@@ -131,6 +131,13 @@ async function createTables() {
       collection_info TEXT,
       contact_info TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS gallery (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(150),
+      image_url TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `;
 
   await pool.query(schemaSQL);
@@ -227,5 +234,18 @@ async function seedInitialData() {
       (1, 'LUXURY NAILS & SPA', '123 Đường Nguyễn Huệ, P. Bến Nghé, Quận 1, TP. Hồ Chí Minh', '0908 123 456', 'booking@luxurynails.vn', '08:30', '20:30', 4, '✨ Giảm ngay 20% cho quý khách đặt lịch trước qua Website!')
     `);
     console.log('[Seed] Salon settings initialized.');
+  }
+
+  // Gallery seed
+  const [gallery] = await pool.query('SELECT COUNT(*) as count FROM gallery');
+  if (gallery[0].count === 0) {
+    await pool.query(`
+      INSERT INTO gallery (title, image_url) VALUES
+      ('Sơn Gel Hàn Quốc Cao Cấp', 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&auto=format&fit=crop&q=80'),
+      ('Úp Móng Thạch Design VIP', 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80'),
+      ('Hiệu Ứng Mắt Mèo Ombre', 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80'),
+      ('Đắp Bột Khai Thấu Mới 2026', 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=600&auto=format&fit=crop&q=80');
+    `);
+    console.log('[Seed] Gallery collection seeded.');
   }
 }

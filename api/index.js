@@ -7,6 +7,7 @@ import settingsHandler from './_handlers/settings.js';
 import statsHandler from './_handlers/stats.js';
 import uploadHandler from './_handlers/upload.js';
 import usersHandler from './_handlers/users.js';
+import galleryHandler from './_handlers/gallery.js';
 import { cors } from './_lib/cors.js';
 
 async function parseJsonIfNeeded(req) {
@@ -66,6 +67,9 @@ export default async function handler(req, res) {
     }
     if (url.includes('/users')) {
       return await usersHandler(req, res);
+    }
+    if (url.includes('/gallery')) {
+      return await galleryHandler(req, res);
     }
 
     return res.status(404).json({ message: `API Route Not Found: ${url}` });

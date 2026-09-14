@@ -169,6 +169,26 @@ export default async function handler(req, res) {
       console.log('[Seed] Homepage content initialized.');
     }
 
+    // Create gallery table
+    await sql`
+      CREATE TABLE IF NOT EXISTS gallery (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(150),
+        image_url TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    // Seed gallery items
+    const existingGallery = await sql`SELECT COUNT(*) as count FROM gallery`;
+    if (parseInt(existingGallery[0].count) === 0) {
+      await sql`INSERT INTO gallery (title, image_url) VALUES ('Sơn Gel Hàn Quốc Cao Cấp', 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&auto=format&fit=crop&q=80')`;
+      await sql`INSERT INTO gallery (title, image_url) VALUES ('Úp Móng Thạch Design VIP', 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80')`;
+      await sql`INSERT INTO gallery (title, image_url) VALUES ('Hiệu Ứng Mắt Mèo Ombre', 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80')`;
+      await sql`INSERT INTO gallery (title, image_url) VALUES ('Đắp Bột Khai Thấu Mới 2026', 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=600&auto=format&fit=crop&q=80')`;
+      console.log('[Seed] Gallery seeded.');
+    }
+
     res.json({
       message: '✅ Database initialized successfully!',
       details: 'Tables created and seed data inserted.'

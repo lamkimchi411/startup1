@@ -34,6 +34,8 @@ export default function HomePage({ services = [], setActiveTab, onOpenBookingMod
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const [galleryItems, setGalleryItems] = useState([]);
+
   useEffect(() => {
     fetch('/api/settings/homepage')
       .then(res => res.json())
@@ -43,6 +45,15 @@ export default function HomePage({ services = [], setActiveTab, onOpenBookingMod
         }
       })
       .catch(err => console.error('Fetch homepage error:', err));
+
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setGalleryItems(data);
+        }
+      })
+      .catch(err => console.error('Fetch gallery error:', err));
   }, []);
 
   const handleFinalSubmitBooking = () => {
@@ -380,15 +391,46 @@ export default function HomePage({ services = [], setActiveTab, onOpenBookingMod
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {[
-              'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&auto=format&fit=crop&q=80',
-              'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80',
-              'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80',
-              'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=600&auto=format&fit=crop&q=80'
-            ].map((img, i) => (
-              <div key={i} className="glass-card glass-card-hover" style={{ overflow: 'hidden', height: '220px', borderRadius: '16px' }}>
-                <img src={img} alt="Collection" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+            {(galleryItems.length > 0 ? galleryItems : [
+              { id: 1, title: 'Sơn Gel Hàn Quốc Cao Cấp', image_url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&auto=format&fit=crop&q=80' },
+              { id: 2, title: 'Úp Móng Thạch Design VIP', image_url: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80' },
+              { id: 3, title: 'Hiệu Ứng Mắt Mèo Ombre', image_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80' },
+              { id: 4, title: 'Đắp Bột Khai Thấu Mới 2026', image_url: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=600&auto=format&fit=crop&q=80' }
+            ]).map((item, i) => (
+              <div 
+                key={item.id || i} 
+                className="glass-card glass-card-hover" 
+                style={{ 
+                  overflow: 'hidden', 
+                  height: '240px', 
+                  borderRadius: '16px', 
+                  position: 'relative',
+                  padding: 0
+                }}
+              >
+                <img 
+                  src={item.image_url} 
+                  alt={item.title || 'Collection'} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} 
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                />
+                
+                {item.title && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0, left: 0, width: '100%',
+                    background: 'linear-gradient(to top, rgba(10,5,20,0.9) 0%, rgba(10,5,20,0.4) 70%, transparent 100%)',
+                    padding: '1rem 1.25rem 0.85rem',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                  }}>
+                    {item.title}
+                  </div>
+                )}
               </div>
             ))}
           </div>

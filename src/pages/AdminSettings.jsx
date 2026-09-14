@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Phone, MapPin, Mail, Clock, Save, Image as ImageIcon, Upload, Layout } from 'lucide-react';
+import { Store, Phone, MapPin, Mail, Clock, Save, Image as ImageIcon, Upload, Layout, Plus, Trash2, Edit3, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
 
@@ -30,9 +30,31 @@ export default function AdminSettings() {
     contact_info: 'Hotline: 0908 123 456 - Địa chỉ: 123 Đường Nguyễn Huệ, Quận 1, TP.HCM'
   });
 
+  // Gallery CRUD state
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [editingGalleryItem, setEditingGalleryItem] = useState(null);
+  const [galleryFormData, setGalleryFormData] = useState({ title: '', image_url: '' });
+  const [uploadingGalleryImg, setUploadingGalleryImg] = useState(false);
+  const [savingGalleryItem, setSavingGalleryItem] = useState(false);
+
   const [savingSalon, setSavingSalon] = useState(false);
   const [savingHome, setSavingHome] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const fetchGallery = () => {
+    setLoadingGallery(true);
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setGalleryItems(data);
+        }
+      })
+      .catch(err => console.error('Fetch gallery error:', err))
+      .finally(() => setLoadingGallery(false));
+  };
 
   useEffect(() => {
     if (settings) {
@@ -57,6 +79,9 @@ export default function AdminSettings() {
         }
       })
       .catch(err => console.error('Fetch homepage data error:', err));
+
+    // Fetch gallery items
+    fetchGallery();
   }, [settings]);
 
   const handleSalonSubmit = async (e) => {
@@ -139,14 +164,112 @@ export default function AdminSettings() {
     }
   };
 
+  // GALLERY CRUD HANDLERS
+  const handleOpenAddGalleryModal = () => {
+    setEditingGalleryItem(null);
+    setGalleryFormData({ title: '', image_url: '' });
+    setShowGalleryModal(true);
+  };
+
+  const handleOpenEditGalleryModal = (item) => {
+    setEditingGalleryItem(item);
+    setGalleryFormData({ title: item.title || '', image_url: item.image_url || '' });
+    setShowGalleryModal(true);
+  };
+
+  const handleGalleryFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingGalleryImg(true);
+    const data = new FormData();
+    data.append('image', file);
+
+    try {
+      const res = await fetch('/api/services/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: data
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      setGalleryFormData(prev => ({ ...prev, image_url: result.url }));
+      showToast('🖼️ Đã tải ảnh mẫu móng lên thành công!');
+    } catch (err) {
+      alert(err.message || 'Lỗi tải ảnh');
+    } finally {
+      setUploadingGalleryImg(false);
+    }
+  };
+
+  const handleSaveGalleryItem = async (e) => {
+    e.preventDefault();
+    if (!galleryFormData.image_url) {
+      alert('Vui lòng chọn hoặc nhập đường dẫn ảnh');
+      return;
+    }
+
+    setSavingGalleryItem(true);
+    try {
+      const isEdit = Boolean(editingGalleryItem);
+      const endpoint = isEdit ? `/api/gallery/${editingGalleryItem.id}` : '/api/gallery';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(galleryFormData)
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      showToast(isEdit ? '✏️ Đã cập nhật mẫu móng!' : '✨ Đã thêm mẫu móng mới vào Bộ sưu tập!');
+      setShowGalleryModal(false);
+      fetchGallery();
+    } catch (err) {
+      alert(err.message || 'Lỗi lưu mẫu móng');
+    } finally {
+      setSavingGalleryItem(false);
+    }
+  };
+
+  const handleDeleteGalleryItem = async (id, title) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa mẫu móng "${title || 'này'}" khỏi Bộ sưu tập?`)) return;
+
+    try {
+      const res = await fetch(`/api/gallery/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+
+      showToast('🗑️ Đã xóa mẫu móng khỏi Bộ sưu tập');
+      fetchGallery();
+    } catch (err) {
+      alert(err.message || 'Lỗi khi xóa mẫu móng');
+    }
+  };
+
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+    <div className="animate-fade-in" style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
       
       {/* SECTION 1: HOMEPAGE CRUD */}
       <div>
         <div style={{ marginBottom: '1.25rem' }}>
           <h1 style={{ fontSize: '1.8rem', color: '#fff', fontFamily: 'var(--font-heading)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Layout size={24} style={{ color: 'var(--gold-primary)' }} /> QUẢN LÝ NỘI DUNG & ẢNH TRANG CHỦ (HOMEPAGE CRUD)
+            <Layout size={24} style={{ color: 'var(--gold-primary)' }} /> QUẢN LÝ NỘI DUNG & BANNER TRANG CHỦ
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             Chỉnh sửa Tiêu đề Hero, Mô tả, Ảnh nền Banner và các Thông tin hiển thị ngoài Trang chủ
@@ -193,12 +316,12 @@ export default function AdminSettings() {
 
             {/* Image Upload Block */}
             <div className="input-group">
-              <label className="input-label">Ảnh Nền / Graphic Trang Chủ (File tải lên không bị mất khi F5):</label>
+              <label className="input-label">Ảnh Nền Banner Trang Chủ:</label>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <input
                   type="text"
                   className="custom-input"
-                  placeholder="Đường dẫn ảnh (/uploads/img-...)"
+                  placeholder="Đường dẫn ảnh (https://...)"
                   value={homeData.hero_image_url}
                   onChange={(e) => setHomeData({ ...homeData, hero_image_url: e.target.value })}
                   style={{ flex: 1 }}
@@ -211,7 +334,7 @@ export default function AdminSettings() {
               </div>
 
               {homeData.hero_image_url && (
-                <div style={{ marginTop: '0.75rem', width: '120px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-gold)' }}>
+                <div style={{ marginTop: '0.75rem', width: '140px', height: '85px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-gold)' }}>
                   <img src={homeData.hero_image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               )}
@@ -228,7 +351,7 @@ export default function AdminSettings() {
             </div>
 
             <div className="input-group" style={{ marginBottom: '1.75rem' }}>
-              <label className="input-label">Mô tả Bộ Sưu Tập:</label>
+              <label className="input-label">Mô tả Tiêu đề Bộ Sưu Tập:</label>
               <input
                 type="text"
                 className="custom-input"
@@ -246,7 +369,94 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      {/* SECTION 2: SALON INFO SETTINGS */}
+      {/* SECTION 2: HOMEPAGE GALLERY COLLECTION CRUD */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', color: '#fff', fontFamily: 'var(--font-heading)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Sparkles size={22} style={{ color: 'var(--gold-primary)' }} /> BỘ SƯU TẬP MẪU MÓNG NỔI BẬT (GALLERY CRUD)
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Quản lý danh sách các mẫu móng nghệ thuật hiển thị trong mục "Bộ Sưu Tập" ngoài Trang chủ
+            </p>
+          </div>
+
+          <button onClick={handleOpenAddGalleryModal} className="btn-gold" style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}>
+            <Plus size={16} /> Thêm Mẫu Móng Mới
+          </button>
+        </div>
+
+        <div className="glass-card" style={{ padding: '1.5rem', border: '1px solid var(--border-gold)' }}>
+          {loadingGallery ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Đang tải danh sách bộ sưu tập...</div>
+          ) : galleryItems.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+              Chưa có mẫu móng nào trong bộ sưu tập. Hãy bấm <strong>"Thêm Mẫu Móng Mới"</strong> để tạo!
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.25rem' }}>
+              {galleryItems.map((item) => (
+                <div 
+                  key={item.id} 
+                  style={{
+                    background: 'rgba(15, 7, 26, 0.7)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(157, 78, 221, 0.3)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    position: 'relative'
+                  }}
+                >
+                  <div style={{ width: '100%', height: '160px', overflow: 'hidden', position: 'relative' }}>
+                    <img 
+                      src={item.image_url} 
+                      alt={item.title || 'Mẫu móng'} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  </div>
+
+                  <div style={{ padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.title || 'Mẫu Móng Art'}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <button 
+                        onClick={() => handleOpenEditGalleryModal(item)} 
+                        className="btn-outline-gold" 
+                        style={{ flex: 1, padding: '0.35rem 0.5rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                      >
+                        <Edit3 size={13} /> Sửa
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleDeleteGalleryItem(item.id, item.title)} 
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.2)',
+                          color: '#f87171',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          borderRadius: '6px',
+                          padding: '0.35rem 0.65rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* SECTION 3: SALON INFO SETTINGS */}
       <div>
         <div style={{ marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: '1.5rem', color: '#fff', fontFamily: 'var(--font-heading)' }}>
@@ -317,6 +527,99 @@ export default function AdminSettings() {
           </form>
         </div>
       </div>
+
+      {/* GALLERY ADD / EDIT MODAL */}
+      {showGalleryModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, width: '100vw', height: '100vh',
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          <div 
+            className="glass-card animate-scale-up" 
+            style={{ 
+              width: '100%', 
+              maxWidth: '520px', 
+              padding: '2rem', 
+              border: '1px solid var(--border-gold-bright)',
+              position: 'relative'
+            }}
+          >
+            <button 
+              onClick={() => setShowGalleryModal(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem', right: '1rem',
+                background: 'none', border: 'none',
+                color: 'var(--text-muted)', cursor: 'pointer'
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '1.3rem', color: '#fff', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ImageIcon size={20} style={{ color: 'var(--gold-primary)' }} />
+              {editingGalleryItem ? 'CHỈNH SỬA MẪU MÓNG BỘ SƯU TẬP' : 'THÊM MẪU MÓNG MỚI VÀO BỘ SƯU TẬP'}
+            </h3>
+
+            <form onSubmit={handleSaveGalleryItem}>
+              <div className="input-group">
+                <label className="input-label">Tên Mẫu Móng / Thiết Kế (Tùy chọn):</label>
+                <input
+                  type="text"
+                  className="custom-input"
+                  placeholder="Ví dụ: Sơn Gel Hàn Quốc Đính Đá VIP"
+                  value={galleryFormData.title}
+                  onChange={(e) => setGalleryFormData({ ...galleryFormData, title: e.target.value })}
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Hình Ảnh Mẫu Móng (*):</label>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    className="custom-input"
+                    placeholder="Nhập link ảnh (https://...) hoặc tải file lên bên dưới"
+                    value={galleryFormData.image_url}
+                    onChange={(e) => setGalleryFormData({ ...galleryFormData, image_url: e.target.value })}
+                    style={{ flex: 1 }}
+                    required
+                  />
+
+                  <label className="btn-outline-gold" style={{ cursor: 'pointer', padding: '0.75rem 1rem', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                    <Upload size={14} /> {uploadingGalleryImg ? 'Đang tải...' : 'Tải Ảnh Mới'}
+                    <input type="file" accept="image/*" onChange={handleGalleryFileUpload} style={{ display: 'none' }} disabled={uploadingGalleryImg} />
+                  </label>
+                </div>
+
+                {galleryFormData.image_url && (
+                  <div style={{ marginTop: '0.85rem', width: '100%', height: '180px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-gold)' }}>
+                    <img src={galleryFormData.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.75rem' }}>
+                <button type="button" onClick={() => setShowGalleryModal(false)} className="btn-dark" style={{ padding: '0.75rem 1.25rem' }}>
+                  Hủy
+                </button>
+                <button type="submit" className="btn-gold" style={{ padding: '0.75rem 1.75rem' }} disabled={savingGalleryItem}>
+                  <Save size={16} /> {savingGalleryItem ? 'Đang lưu...' : (editingGalleryItem ? 'LƯU CẬP NHẬT' : 'THÊM MẪU MÓNG')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

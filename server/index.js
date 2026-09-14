@@ -7,6 +7,7 @@ import bookingRoutes from './routes/bookings.js';
 import settingRoutes from './routes/settings.js';
 import statsRoutes from './routes/stats.js';
 import userRoutes from './routes/users.js';
+import galleryRoutes from './routes/gallery.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/gallery', galleryRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
