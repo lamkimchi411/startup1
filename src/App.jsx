@@ -23,7 +23,18 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('home');
   const [adminSubTab, setAdminSubTab] = useState('dashboard'); // dashboard, users, services, bookings, settings
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingPreset, setBookingPreset] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const openBookingModal = (preset = {}) => {
+    setBookingPreset(preset);
+    setIsBookingModalOpen(true);
+  };
+
+  const closeBookingModal = () => {
+    setIsBookingModalOpen(false);
+    setBookingPreset({});
+  };
 
   // Wrap setActiveTab to trigger data refresh when navigating to home
   const handleSetActiveTab = (tab) => {
@@ -96,7 +107,7 @@ function AppContent() {
           <Navbar 
             activeTab={activeTab} 
             setActiveTab={handleSetActiveTab} 
-            onOpenBookingModal={() => setIsBookingModalOpen(true)} 
+            onOpenBookingModal={openBookingModal}
           />
           <main style={{ flex: 1 }}>
             <LoginPage setActiveTab={setActiveTab} />
@@ -124,7 +135,7 @@ function AppContent() {
       <Navbar 
         activeTab={activeTab} 
         setActiveTab={handleSetActiveTab} 
-        onOpenBookingModal={() => setIsBookingModalOpen(true)} 
+        onOpenBookingModal={openBookingModal}
       />
 
       <main style={{ flex: 1 }}>
@@ -133,7 +144,7 @@ function AppContent() {
             key={refreshKey}
             services={services} 
             setActiveTab={handleSetActiveTab} 
-            onOpenBookingModal={() => setIsBookingModalOpen(true)} 
+            onOpenBookingModal={openBookingModal}
           />
         )}
 
@@ -142,7 +153,7 @@ function AppContent() {
             key={refreshKey}
             services={services} 
             categories={categories} 
-            onOpenBookingModal={() => setIsBookingModalOpen(true)} 
+            onOpenBookingModal={openBookingModal}
           />
         )}
 
@@ -155,8 +166,9 @@ function AppContent() {
 
       <BookingModal 
         isOpen={isBookingModalOpen} 
-        onClose={() => setIsBookingModalOpen(false)} 
+        onClose={closeBookingModal}
         allServices={services} 
+        initialDate={bookingPreset.initialDate}
       />
 
       <NotificationToast />

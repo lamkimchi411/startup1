@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar as CalendarIcon, Clock, User, Phone, Mail, FileText, CheckCircle2, Sparkles, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useBooking } from '../context/BookingContext';
 
-export default function BookingModal({ isOpen, onClose, allServices = [] }) {
+export default function BookingModal({ isOpen, onClose, allServices = [], initialDate }) {
   const { selectedServices, toggleServiceSelection, clearSelectedServices, showToast } = useBooking();
 
   const [step, setStep] = useState(1); // 1: Select services & info, 2: Select Date/Time & Customer Info, 3: Review & Submit, 4: Success confirmation
@@ -22,6 +22,14 @@ export default function BookingModal({ isOpen, onClose, allServices = [] }) {
 
   const totalPrice = selectedServices.reduce((sum, s) => sum + parseFloat(s.price), 0);
   const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration_minutes, 0);
+
+  // A date chosen from the quick calendar is carried into this separate booking form.
+  useEffect(() => {
+    if (isOpen && initialDate) {
+      setSelectedDate(initialDate);
+      setSelectedSlot('');
+    }
+  }, [isOpen, initialDate]);
 
   // Fetch available slots when date or duration changes
   useEffect(() => {
