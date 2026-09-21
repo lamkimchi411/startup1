@@ -20,5 +20,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // A running local preview can temporarily lock files in dist on Windows.
+    // Keep existing hashed assets; each build writes and references its own files.
+    emptyOutDir: false,
   },
 });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Clock, MapPin } from 'lucide-react';
 
 export default function HomePage({ services = [], setActiveTab, onOpenBookingModal }) {
   const [homepageContent, setHomepageContent] = useState({
