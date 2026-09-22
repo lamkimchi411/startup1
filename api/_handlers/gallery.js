@@ -43,7 +43,8 @@ export default async function handler(req, res) {
 
   const url = req.url || '';
   const match = url.match(/\/gallery\/(\d+)/);
-  const id = (req.query && req.query.id) || (match ? match[1] : null);
+  const rawId = (req.query && req.query.id) || (match ? match[1] : null);
+  const id = /^\d+$/.test(String(rawId || '')) ? Number(rawId) : null;
 
   // PUT /api/gallery/:id - Update item
   if (req.method === 'PUT' && id) {
@@ -56,11 +57,16 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Vui lòng cung cấp đường dẫn ảnh (image_url)' });
       }
 
-      await sql`
+      const updated = await sql`
         UPDATE gallery
         SET title = ${title || ''}, image_url = ${image_url}
         WHERE id = ${id}
+        RETURNING id
       `;
+
+      if (updated.length === 0) {
+        return res.status(404).json({ message: 'Không tìm thấy mẫu móng cần cập nhật. Hãy tải lại danh sách rồi thử lại.' });
+      }
 
       return res.json({ message: 'Cập nhật mẫu móng thành công' });
     } catch (err) {

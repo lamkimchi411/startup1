@@ -220,7 +220,9 @@ export default function AdminSettings() {
     setSavingGalleryItem(true);
     try {
       const isEdit = Boolean(editingGalleryItem);
-      const endpoint = isEdit ? `/api/gallery/${editingGalleryItem.id}` : '/api/gallery';
+      // Query parameter is intentional: Vercel's catch-all rewrite keeps it intact,
+      // unlike a nested path that can lose the item id before reaching api/index.js.
+      const endpoint = isEdit ? `/api/gallery?id=${encodeURIComponent(editingGalleryItem.id)}` : '/api/gallery';
       const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(endpoint, {
@@ -249,7 +251,7 @@ export default function AdminSettings() {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa mẫu móng "${title || 'này'}" khỏi Bộ sưu tập?`)) return;
 
     try {
-      const res = await fetch(`/api/gallery/${id}`, {
+      const res = await fetch(`/api/gallery?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`
