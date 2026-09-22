@@ -39,6 +39,26 @@ router.get('/', authenticateToken, async (req, res) => {
       statusCounts[row.status] = row.count;
     });
 
+    // Seven-day appointment and completed-revenue trend, including dates with no bookings.
+    const [dailyTrendRows] = await pool.query(
+      `SELECT DATE_FORMAT(booking_date, '%Y-%m-%d') as date,
+              COUNT(*) as bookings,
+              COALESCE(SUM(CASE WHEN status = 'completed' THEN total_price ELSE 0 END), 0) as revenue
+       FROM bookings
+       WHERE booking_date BETWEEN DATE_SUB(?, INTERVAL 6 DAY) AND ?
+       GROUP BY booking_date
+       ORDER BY booking_date`,
+      [todayStr, todayStr]
+    );
+    const trendByDate = new Map(dailyTrendRows.map(row => [row.date, row]));
+    const dailyTrend = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(`${todayStr}T00:00:00`);
+      date.setDate(date.getDate() - (6 - index));
+      const key = date.toISOString().slice(0, 10);
+      const row = trendByDate.get(key);
+      return { date: key, bookings: Number(row?.bookings || 0), revenue: Number(row?.revenue || 0) };
+    });
+
     // Top 5 Services
     const [topServices] = await pool.query(
       `SELECT s.name, COUNT(bs.service_id) as booking_count, SUM(bs.price) as total_revenue
@@ -66,6 +86,7 @@ router.get('/', authenticateToken, async (req, res) => {
       revenueToday,
       revenueTotal,
       statusCounts,
+      dailyTrend,
       topServices,
       recentBookings
     });

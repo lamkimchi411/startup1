@@ -1,3 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
 :root {
   --bg-dark: #0a0512;
   --bg-card: rgba(22, 11, 38, 0.75);
@@ -38,6 +43,7 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   min-height: 100vh;
+}
 }
 
 /* Typography */

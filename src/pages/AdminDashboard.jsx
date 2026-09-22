@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Calendar, Users, TrendingUp, CheckCircle, Clock, XCircle, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, Calendar, CheckCircle2, DollarSign, RefreshCw, TrendingUp, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AdminReportCharts from '../components/AdminReportCharts';
+
+const formatMoney = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value || 0);
+const statusText = { pending: 'Chờ xác nhận', confirmed: 'Đã xác nhận', completed: 'Hoàn thành', cancelled: 'Đã hủy' };
+const statusStyles = { pending: 'border-amber-300/20 bg-amber-300/10 text-amber-200', confirmed: 'border-blue-300/20 bg-blue-300/10 text-blue-200', completed: 'border-emerald-300/20 bg-emerald-300/10 text-emerald-200', cancelled: 'border-rose-300/20 bg-rose-300/10 text-rose-200' };
+
+function MetricCard({ label, value, note, icon: Icon, accent }) {
+  return <article className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-card backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-white/20">
+    <div className={`absolute right-0 top-0 h-24 w-24 -translate-y-8 translate-x-8 rounded-full blur-2xl ${accent}`} />
+    <div className="relative flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.13em] text-violet-200/65">{label}</p><p className="mt-3 text-2xl font-bold tracking-tight text-white xl:text-[1.7rem]">{value}</p><p className="mt-1.5 text-xs text-slate-400">{note}</p></div><span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.07] text-[#f1d58d]"><Icon size={20} /></span></div>
+  </article>;
+}
 
 export default function AdminDashboard({ onNavigateTab }) {
   const { token } = useAuth();
@@ -9,223 +21,35 @@ export default function AdminDashboard({ onNavigateTab }) {
 
   const fetchStats = () => {
     setLoading(true);
-    fetch('/api/stats', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    fetch('/api/stats', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(data => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error fetching stats:', err);
-        setLoading(false);
-      });
+      .then(data => setStats(data))
+      .catch(err => console.error('Error fetching stats:', err))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchStats();
-  }, [token]);
+  useEffect(() => { fetchStats(); }, [token]);
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price || 0);
-  };
+  if (loading) return <div className="grid min-h-[60vh] place-items-center"><div className="text-center"><span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-[#efd792]/30 bg-[#efd792]/10 text-[#f1d58d]"><RefreshCw className="animate-spin" size={24} /></span><p className="text-sm text-violet-100/65">Đang chuẩn bị báo cáo của bạn...</p></div></div>;
 
-  if (loading) {
-    return (
-      <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-        <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--gold-primary)', marginBottom: '1rem' }} />
-        <p>Đang tải dữ liệu tổng quan...</p>
-      </div>
-    );
-  }
+  return <div className="animate-fade-in mx-auto max-w-7xl">
+    <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#e5c878]">Luxury Nails · Workspace</p><h1 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">Báo cáo tổng quan</h1><p className="mt-2 text-sm text-slate-400">Nắm nhanh tình hình vận hành salon và các lịch hẹn mới nhất.</p></div>
+      <button onClick={fetchStats} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#efd792]/25 bg-[#efd792]/10 px-4 py-2.5 text-sm font-semibold text-[#f7dfa0] transition hover:border-[#efd792]/50 hover:bg-[#efd792]/20"><RefreshCw size={16} />Cập nhật dữ liệu</button>
+    </header>
 
-  return (
-    <div className="animate-fade-in">
-      {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', color: '#fff', fontFamily: 'var(--font-heading)' }}>
-            Báo Cáo Tổng Quan Salon
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Thống kê doanh thu, lịch hẹn và tình hình hoạt động tiệm móng
-          </p>
-        </div>
+    <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <MetricCard label="Doanh thu hôm nay" value={formatMoney(stats?.revenueToday)} note="Đơn đã hoàn thành hôm nay" icon={DollarSign} accent="bg-emerald-400/20" />
+      <MetricCard label="Lịch hẹn hôm nay" value={`${stats?.todayBookings || 0} lịch`} note="Tổng lượt khách đặt hôm nay" icon={Calendar} accent="bg-[#eac96b]/20" />
+      <MetricCard label="Tổng doanh thu" value={formatMoney(stats?.revenueTotal)} note="Từ tất cả đơn đã hoàn thành" icon={TrendingUp} accent="bg-violet-400/20" />
+      <MetricCard label="Tổng lịch hẹn" value={`${stats?.totalBookings || 0} lượt`} note="Kể từ khi bắt đầu hoạt động" icon={Users} accent="bg-sky-400/20" />
+    </section>
 
-        <button onClick={fetchStats} className="btn-dark" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <RefreshCw size={16} /> Cập nhật dữ liệu
-        </button>
-      </div>
+    <AdminReportCharts stats={stats} />
 
-      {/* Metrics Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        
-        {/* Metric 1: Today Revenue */}
-        <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Doanh Thu Hôm Nay</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff' }}>
-            {formatPrice(stats?.revenueToday)}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Đã hoàn thành trong ngày
-          </div>
-        </div>
-
-        {/* Metric 2: Today Bookings */}
-        <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--gold-primary)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Lịch Hẹn Hôm Nay</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(212, 175, 55, 0.15)', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Calendar size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--gold-light)' }}>
-            {stats?.todayBookings || 0} lịch
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Tổng lượt khách đặt hôm nay
-          </div>
-        </div>
-
-        {/* Metric 3: Total Revenue */}
-        <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #3b82f6' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tổng Doanh Thu</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingUp size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff' }}>
-            {formatPrice(stats?.revenueTotal)}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Từ tất cả đơn đã hoàn thành
-          </div>
-        </div>
-
-        {/* Metric 4: Total Bookings */}
-        <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tổng Lịch Hẹn Hệ Thống</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users size={20} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff' }}>
-            {stats?.totalBookings || 0} lượt
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Tổng số lượt khách đã tạo
-          </div>
-        </div>
-
-      </div>
-
-      {/* Grid Status Counts & Top Services */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
-        
-        {/* Status distribution */}
-        <div className="glass-card" style={{ padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '1.25rem', fontFamily: 'var(--font-heading)' }}>
-            Trạng Thái Lịch Hẹn
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#121217', borderRadius: '8px' }}>
-              <span className="badge-status pending">⏳ Chờ xác nhận</span>
-              <strong style={{ color: '#fbbf24', fontSize: '1.1rem' }}>{stats?.statusCounts?.pending || 0} đơn</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#121217', borderRadius: '8px' }}>
-              <span className="badge-status confirmed">✓ Đã xác nhận</span>
-              <strong style={{ color: '#60a5fa', fontSize: '1.1rem' }}>{stats?.statusCounts?.confirmed || 0} đơn</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#121217', borderRadius: '8px' }}>
-              <span className="badge-status completed">★ Đã hoàn thành</span>
-              <strong style={{ color: '#34d399', fontSize: '1.1rem' }}>{stats?.statusCounts?.completed || 0} đơn</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#121217', borderRadius: '8px' }}>
-              <span className="badge-status cancelled">✕ Đã hủy</span>
-              <strong style={{ color: '#f87171', fontSize: '1.1rem' }}>{stats?.statusCounts?.cancelled || 0} đơn</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Top 5 Services */}
-        <div className="glass-card" style={{ padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '1.25rem', fontFamily: 'var(--font-heading)' }}>
-            Top Dịch Vụ Được Ưa Chuộng Nhất
-          </h3>
-          {stats?.topServices?.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem' }}>
-              Chưa có dữ liệu đặt lịch
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {stats?.topServices?.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#121217', borderRadius: '8px', borderLeft: '3px solid var(--gold-primary)' }}>
-                  <div>
-                    <div style={{ color: '#fff', fontWeight: '600', fontSize: '0.9rem' }}>{item.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{item.booking_count} lượt đặt</div>
-                  </div>
-                  <div style={{ color: 'var(--gold-light)', fontWeight: '700' }}>
-                    {formatPrice(item.total_revenue)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-
-      {/* Recent Bookings table summary */}
-      <div className="glass-card" style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#fff', fontFamily: 'var(--font-heading)' }}>
-            Lịch Hẹn Mới Đặt Gần Đây
-          </h3>
-          <button onClick={() => onNavigateTab('admin-bookings')} className="btn-outline-gold" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
-            Xem Tất Cả Lịch Hẹn
-          </button>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #282835', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '0.75rem' }}>Mã Hẹn</th>
-                <th style={{ padding: '0.75rem' }}>Khách Hàng</th>
-                <th style={{ padding: '0.75rem' }}>SĐT</th>
-                <th style={{ padding: '0.75rem' }}>Thời Gian Hẹn</th>
-                <th style={{ padding: '0.75rem' }}>Dịch Vụ</th>
-                <th style={{ padding: '0.75rem' }}>Tổng Tiền</th>
-                <th style={{ padding: '0.75rem' }}>Trạng Thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats?.recentBookings?.map(b => (
-                <tr key={b.id} style={{ borderBottom: '1px solid #1a1a24' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--gold-light)' }}>{b.booking_code}</td>
-                  <td style={{ padding: '0.75rem', color: '#fff' }}>{b.customer_name}</td>
-                  <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>{b.customer_phone}</td>
-                  <td style={{ padding: '0.75rem', color: '#ddd' }}>{b.booking_date?.split('T')[0]} ({b.booking_time})</td>
-                  <td style={{ padding: '0.75rem', color: 'var(--text-muted)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.service_names}</td>
-                  <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--gold-primary)' }}>{formatPrice(b.total_price)}</td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span className={`badge-status ${b.status}`}>{b.status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  );
+    <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-card backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-lg font-bold text-white">Lịch hẹn mới đặt</h2><p className="mt-1 text-xs text-slate-400">Các yêu cầu gần nhất cần được theo dõi.</p></div><button onClick={() => onNavigateTab('admin-bookings')} className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-[#f3d69d] transition hover:text-white sm:self-auto">Xem tất cả <ArrowUpRight size={16} /></button></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-white/[0.035] text-[11px] font-bold uppercase tracking-[0.1em] text-violet-100/55"><tr><th className="px-5 py-3.5">Mã hẹn</th><th className="px-5 py-3.5">Khách hàng</th><th className="px-5 py-3.5">Thời gian</th><th className="px-5 py-3.5">Dịch vụ</th><th className="px-5 py-3.5">Thanh toán</th><th className="px-5 py-3.5">Trạng thái</th></tr></thead><tbody className="divide-y divide-white/[0.07]">{stats?.recentBookings?.length ? stats.recentBookings.map(b => <tr key={b.id} className="transition hover:bg-white/[0.035]"><td className="px-5 py-4 font-semibold text-[#f3d69d]">{b.booking_code}</td><td className="px-5 py-4"><p className="font-medium text-white">{b.customer_name}</p><p className="mt-0.5 text-xs text-slate-500">{b.customer_phone}</p></td><td className="px-5 py-4 text-slate-300"><p>{b.booking_date?.split('T')[0]}</p><p className="mt-0.5 text-xs text-slate-500">{b.booking_time}</p></td><td className="max-w-[220px] truncate px-5 py-4 text-slate-400">{b.service_names || 'Chưa chọn'}</td><td className="px-5 py-4 font-semibold text-white">{formatMoney(b.total_price)}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyles[b.status] || statusStyles.pending}`}>{statusText[b.status] || b.status}</span></td></tr>) : <tr><td colSpan="6" className="px-5 py-12 text-center text-sm text-slate-400"><CheckCircle2 className="mx-auto mb-3 text-violet-300/50" />Chưa có lịch hẹn nào.</td></tr>}</tbody></table></div>
+    </section>
+  </div>;
 }
