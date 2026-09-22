@@ -33,6 +33,7 @@ export default function AdminSettings() {
   // Gallery CRUD state
   const [galleryItems, setGalleryItems] = useState([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
+  const [galleryError, setGalleryError] = useState('');
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [editingGalleryItem, setEditingGalleryItem] = useState(null);
   const [galleryFormData, setGalleryFormData] = useState({ title: '', image_url: '' });
@@ -45,14 +46,17 @@ export default function AdminSettings() {
 
   const fetchGallery = () => {
     setLoadingGallery(true);
+    setGalleryError('');
     fetch('/api/gallery')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setGalleryItems(data);
-        }
+        if (!Array.isArray(data)) throw new Error(data.message || 'Không thể tải bộ sưu tập');
+        setGalleryItems(data);
       })
-      .catch(err => console.error('Fetch gallery error:', err))
+      .catch(err => {
+        console.error('Fetch gallery error:', err);
+        setGalleryError(err.message || 'Không thể tải bộ sưu tập');
+      })
       .finally(() => setLoadingGallery(false));
   };
 
@@ -389,6 +393,11 @@ export default function AdminSettings() {
         <div className="glass-card" style={{ padding: '1.5rem', border: '1px solid var(--border-gold)' }}>
           {loadingGallery ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Đang tải danh sách bộ sưu tập...</div>
+          ) : galleryError ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#fca5a5' }}>
+              <p>{galleryError}</p>
+              <button type="button" onClick={fetchGallery} className="btn-outline-gold" style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>Thử lại</button>
+            </div>
           ) : galleryItems.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
               Chưa có mẫu móng nào trong bộ sưu tập. Hãy bấm <strong>"Thêm Mẫu Móng Mới"</strong> để tạo!

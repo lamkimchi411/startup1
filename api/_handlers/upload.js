@@ -22,6 +22,16 @@ export default async function handler(req, res) {
   const user = requireAuth(req, res);
   if (!user) return;
 
+  // Vercel Blob injects this value after a Blob store is connected to the project.
+  // Check it before parsing the upload so admins get an actionable message instead
+  // of the raw SDK exception shown by Vercel.
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return res.status(503).json({
+      code: 'BLOB_NOT_CONFIGURED',
+      message: 'Chức năng tải ảnh chưa được cấu hình trên Vercel. Hãy liên kết Vercel Blob với project rồi triển khai lại.'
+    });
+  }
+
   try {
     await runMiddleware(req, res, upload.single('image'));
 
@@ -44,6 +54,9 @@ export default async function handler(req, res) {
     res.json({ message: 'Tải ảnh thành công', url: blob.url });
   } catch (err) {
     console.error('Upload error:', err);
-    res.status(500).json({ message: 'Lỗi khi tải ảnh lên: ' + err.message });
+    const message = err?.message?.includes('No token found')
+      ? 'Chức năng tải ảnh chưa được cấu hình trên Vercel. Hãy liên kết Vercel Blob với project rồi triển khai lại.'
+      : 'Không thể tải ảnh lên lúc này. Vui lòng thử lại.';
+    res.status(500).json({ message });
   }
 }
