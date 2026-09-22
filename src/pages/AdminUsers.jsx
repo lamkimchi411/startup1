@@ -102,13 +102,19 @@ export default function AdminUsers() {
         body: JSON.stringify(formData)
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Máy chủ phản hồi không hợp lệ (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (!res.ok) throw new Error(data.message || 'Lỗi thao tác');
 
       showToast(isNew ? '✨ Tạo người dùng mới thành công!' : '✔ Cập nhật thông tin thành công!');
       setEditingId(null);
       fetchUsers();
     } catch (err) {
+      console.error('User save error:', err);
       alert(err.message);
     } finally {
       setSaving(false);
@@ -127,12 +133,18 @@ export default function AdminUsers() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Máy chủ phản hồi không hợp lệ (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (!res.ok) throw new Error(data.message || 'Không thể xóa');
 
       showToast('🗑️ Đã xóa người dùng thành công');
       fetchUsers();
     } catch (err) {
+      console.error('User delete error:', err);
       alert(err.message);
     }
   };

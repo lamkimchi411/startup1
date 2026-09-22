@@ -102,12 +102,18 @@ export default function AdminSettings() {
         body: JSON.stringify(formData)
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Máy chủ phản hồi không hợp lệ (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (!res.ok) throw new Error(data.message);
 
       setSettings(formData);
       showToast('⚙️ Cấu hình Salon đã được lưu thành công!');
     } catch (err) {
+      console.error('Salon submit error:', err);
       alert(err.message || 'Không thể lưu cài đặt');
     } finally {
       setSavingSalon(false);
@@ -128,11 +134,17 @@ export default function AdminSettings() {
         body: JSON.stringify(homeData)
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Máy chủ phản hồi không hợp lệ (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (!res.ok) throw new Error(data.message);
 
       showToast('✨ Nội dung Trang Chủ đã được cập nhật!');
     } catch (err) {
+      console.error('Homepage submit error:', err);
       alert(err.message || 'Không thể cập nhật trang chủ');
     } finally {
       setSavingHome(false);
@@ -234,13 +246,19 @@ export default function AdminSettings() {
         body: JSON.stringify(galleryFormData)
       });
 
-      const result = await res.json();
+      let result;
+      try {
+        result = await res.json();
+      } catch {
+        throw new Error(`Máy chủ phản hồi không hợp lệ (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (!res.ok) throw new Error(result.message);
 
       showToast(isEdit ? '✏️ Đã cập nhật mẫu móng!' : '✨ Đã thêm mẫu móng mới vào Bộ sưu tập!');
       setShowGalleryModal(false);
       fetchGallery();
     } catch (err) {
+      console.error('Gallery save error:', err);
       alert(err.message || 'Lỗi lưu mẫu móng');
     } finally {
       setSavingGalleryItem(false);

@@ -94,7 +94,12 @@ export default function AdminServices({ onServicesUpdated }) {
         body: JSON.stringify(formData)
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Máy chủ phản hồi không hợp lệ (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (!res.ok) throw new Error(data.message || 'Không thể lưu dịch vụ');
 
       showToast(editingService ? 'Đã cập nhật dịch vụ' : 'Đã thêm dịch vụ mới');
@@ -102,6 +107,7 @@ export default function AdminServices({ onServicesUpdated }) {
       fetchServicesData();
       if (onServicesUpdated) onServicesUpdated();
     } catch (err) {
+      console.error('Service save error:', err);
       alert(err.message);
     } finally {
       setSaving(false);
