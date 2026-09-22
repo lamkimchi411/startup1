@@ -11,15 +11,23 @@ import galleryHandler from './_handlers/gallery.js';
 import { cors } from './_lib/cors.js';
 
 async function parseJsonIfNeeded(req) {
-  if (req.body) return;
+  // Vercel may already expose a parsed body (including an empty object). Do not
+  // overwrite it: doing so drops POST/PUT form data after a rewrite.
+  if (req.body !== undefined) {
+    if (typeof req.body === 'string') {
+      try {
+        req.body = req.body ? JSON.parse(req.body) : {};
+      } catch {
+        req.body = {};
+      }
+    }
+    return;
+  }
+
   const contentType = req.headers['content-type'] || '';
   if (contentType.includes('multipart/form-data')) return;
 
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-    if (req.readableEnded || req.complete) {
-      req.body = req.body || {};
-      return;
-    }
     try {
       const buffers = [];
       for await (const chunk of req) {
