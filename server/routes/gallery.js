@@ -39,9 +39,10 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/gallery/:id - Update gallery item (Admin)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put(['/', '/:id'], authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id || req.query.id;
+    if (!/^\d+$/.test(String(id || ''))) return res.status(400).json({ message: 'Mã mẫu móng không hợp lệ' });
     const { title, image_url } = req.body || {};
 
     if (!image_url) {
@@ -61,9 +62,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/gallery/:id - Delete gallery item (Admin)
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete(['/', '/:id'], authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id || req.query.id;
+    if (!/^\d+$/.test(String(id || ''))) return res.status(400).json({ message: 'Mã mẫu móng không hợp lệ' });
     await pool.query('DELETE FROM gallery WHERE id = ?', [id]);
     res.json({ message: 'Đã xóa mẫu móng khỏi bộ sưu tập' });
   } catch (err) {

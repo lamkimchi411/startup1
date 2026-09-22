@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Store, Phone, MapPin, Mail, Clock, Save, Image as ImageIcon, Upload, Layout, Plus, Trash2, Edit3, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
@@ -39,6 +40,14 @@ export default function AdminSettings() {
   const [galleryFormData, setGalleryFormData] = useState({ title: '', image_url: '' });
   const [uploadingGalleryImg, setUploadingGalleryImg] = useState(false);
   const [savingGalleryItem, setSavingGalleryItem] = useState(false);
+  const [gallerySaveError, setGallerySaveError] = useState('');
+
+  useEffect(() => {
+    if (!showGalleryModal) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [showGalleryModal]);
 
   const [savingSalon, setSavingSalon] = useState(false);
   const [savingHome, setSavingHome] = useState(false);
@@ -182,12 +191,14 @@ export default function AdminSettings() {
 
   // GALLERY CRUD HANDLERS
   const handleOpenAddGalleryModal = () => {
+    setGallerySaveError('');
     setEditingGalleryItem(null);
     setGalleryFormData({ title: '', image_url: '' });
     setShowGalleryModal(true);
   };
 
   const handleOpenEditGalleryModal = (item) => {
+    setGallerySaveError('');
     setEditingGalleryItem(item);
     setGalleryFormData({ title: item.title || '', image_url: item.image_url || '' });
     setShowGalleryModal(true);
@@ -224,8 +235,10 @@ export default function AdminSettings() {
 
   const handleSaveGalleryItem = async (e) => {
     e.preventDefault();
-    if (!galleryFormData.image_url) {
-      alert('Vui lòng chọn hoặc nhập đường dẫn ảnh');
+    if (savingGalleryItem || uploadingGalleryImg) return;
+    setGallerySaveError('');
+    if (!galleryFormData.image_url.trim()) {
+      setGallerySaveError('Vui lòng chọn hoặc nhập đường dẫn ảnh');
       return;
     }
 
@@ -259,7 +272,7 @@ export default function AdminSettings() {
       fetchGallery();
     } catch (err) {
       console.error('Gallery save error:', err);
-      alert(err.message || 'Lỗi lưu mẫu móng');
+      setGallerySaveError(err.message || 'Lỗi lưu mẫu móng');
     } finally {
       setSavingGalleryItem(false);
     }
@@ -558,31 +571,40 @@ export default function AdminSettings() {
       </div>
 
       {/* GALLERY ADD / EDIT MODAL */}
-      {showGalleryModal && (
+      {showGalleryModal && createPortal(
         <div 
           style={{
             position: 'fixed',
-            top: 0, left: 0, width: '100vw', height: '100vh',
+            inset: 0,
             background: 'rgba(0, 0, 0, 0.75)',
             backdropFilter: 'blur(8px)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '1rem'
+            padding: '1rem',
+            overflowY: 'auto'
           }}
         >
           <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gallery-dialog-title"
             className="glass-card animate-scale-up" 
             style={{ 
               width: '100%', 
               maxWidth: '520px', 
+              maxHeight: 'calc(100dvh - 2rem)',
+              overflowY: 'auto',
               padding: '2rem', 
               border: '1px solid var(--border-gold-bright)',
               position: 'relative'
             }}
           >
             <button 
+              type="button"
+              aria-label="Đóng hộp thoại"
+              disabled={savingGalleryItem || uploadingGalleryImg}
               onClick={() => setShowGalleryModal(false)}
               style={{
                 position: 'absolute',
@@ -594,12 +616,13 @@ export default function AdminSettings() {
               <X size={20} />
             </button>
 
-            <h3 style={{ fontSize: '1.3rem', color: '#fff', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 id="gallery-dialog-title" style={{ fontSize: '1.3rem', color: '#fff', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ImageIcon size={20} style={{ color: 'var(--gold-primary)' }} />
               {editingGalleryItem ? 'CHỈNH SỬA MẪU MÓNG BỘ SƯU TẬP' : 'THÊM MẪU MÓNG MỚI VÀO BỘ SƯU TẬP'}
             </h3>
 
             <form onSubmit={handleSaveGalleryItem}>
+              {gallerySaveError && <p role="alert" style={{ color: '#fca5a5', marginBottom: '1rem' }}>{gallerySaveError}</p>}
               <div className="input-group">
                 <label className="input-label">Tên Mẫu Móng / Thiết Kế (Tùy chọn):</label>
                 <input
@@ -638,16 +661,16 @@ export default function AdminSettings() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.75rem' }}>
-                <button type="button" onClick={() => setShowGalleryModal(false)} className="btn-dark" style={{ padding: '0.75rem 1.25rem' }}>
+                <button type="button" disabled={savingGalleryItem || uploadingGalleryImg} onClick={() => setShowGalleryModal(false)} className="btn-dark" style={{ padding: '0.75rem 1.25rem' }}>
                   Hủy
                 </button>
-                <button type="submit" className="btn-gold" style={{ padding: '0.75rem 1.75rem' }} disabled={savingGalleryItem}>
+                <button type="submit" className="btn-gold" style={{ padding: '0.75rem 1.75rem' }} disabled={savingGalleryItem || uploadingGalleryImg}>
                   <Save size={16} /> {savingGalleryItem ? 'Đang lưu...' : (editingGalleryItem ? 'LƯU CẬP NHẬT' : 'THÊM MẪU MÓNG')}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>, document.body
       )}
 
     </div>
